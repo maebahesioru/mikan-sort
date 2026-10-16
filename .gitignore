@@ -1,0 +1,3 @@
+# nothing to ignore yet — no build artifacts, no dependencies
+.DS_Store
+*.log

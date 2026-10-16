@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mikan Sort! — A Recycling Game for a Cleaner World</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="hud">
+  <div class="hud-left">
+    <span class="logo">🍊 Mikan Sort!</span>
+  </div>
+  <div class="hud-stats">
+    <span class="stat"><b id="score">0</b> pts</span>
+    <span class="stat" id="lives" aria-label="lives">♥♥♥</span>
+    <span class="stat" id="level">Lv 1</span>
+    <span class="stat streak" id="streak"></span>
+  </div>
+  <button id="sound-btn" type="button" aria-label="Toggle sound">🔊</button>
+</header>
+
+<main id="stage">
+  <canvas id="game" width="960" height="600" aria-label="Mikan Sort game area"></canvas>
+
+  <div id="toast" class="toast hidden" role="status"></div>
+
+  <div id="overlay-start" class="overlay">
+    <div class="card">
+      <h1>🍊 Mikan Sort!</h1>
+      <p class="purpose">Every year, <b>wrong sorting</b> sends recyclables to landfills.
+        Sort the waste on the belt into the right bin and learn <b>why</b> as you go.</p>
+      <ul class="how">
+        <li>👆 Click / tap an item on the belt to pick it up</li>
+        <li>🗑️ Click a bin — or press <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> — to sort it</li>
+        <li>❤️ Wrong bin or missed item costs a life. 3 lives.</li>
+        <li>⚠️ The HAZARD bin unlocks at Level 2!</li>
+      </ul>
+      <button id="start-btn" class="primary" type="button">Start sorting</button>
+    </div>
+  </div>
+
+  <div id="overlay-over" class="overlay hidden">
+    <div class="card">
+      <h1>Time's up!</h1>
+      <p class="big" id="final-score">0 pts</p>
+      <p id="final-stats"></p>
+      <p class="purpose" id="final-impact"></p>
+      <p class="best">Best: <b id="best-score">0</b> pts</p>
+      <button id="restart-btn" class="primary" type="button">Play again</button>
+    </div>
+  </div>
+</main>
+
+<footer id="hint">Select an item, then choose its bin — get it right to keep it out of the landfill. ♻️</footer>
+
+<script src="js/items.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
