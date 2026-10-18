@@ -1,5 +1,6 @@
 /* Mikan Sort! — core game (vanilla canvas, no dependencies)
- * GWC HHS Hackathon 2026 — skeleton build 2026-10-16 (playable vertical slice)
+ * GWC HHS Hackathon 2026 — core build 2026-10-18
+ * Features: item tiers by level, difficulty curve, combo multiplier, result screen.
  */
 'use strict';
 
@@ -13,7 +14,8 @@
   const ui = {
     score: $('score'), lives: $('lives'), level: $('level'), streak: $('streak'),
     toast: $('toast'), start: $('overlay-start'), over: $('overlay-over'),
-    finalScore: $('final-score'), finalStats: $('final-stats'), finalImpact: $('final-impact'),
+    finalScore: $('final-score'), finalImpact: $('final-impact'), finalBreakdown: $('final-breakdown'),
+    finalStats: $('final-stats'), finalRank: $('final-rank'),
     bestScore: $('best-score'), soundBtn: $('sound-btn'),
   };
 
@@ -29,13 +31,16 @@
   const EMOJI_FONT = '46px "Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif';
   const LABEL_FONT = '600 13px -apple-system,"Segoe UI",Roboto,sans-serif';
   const SMALL_FONT = '11px -apple-system,"Segoe UI",Roboto,sans-serif';
+  const FLOAT_FONT = '700 18px -apple-system,"Segoe UI",Roboto,sans-serif';
 
   // ---- state ----
   const S = {
     mode: 'menu', // menu | play | over
-    score: 0, lives: 3, level: 1, streak: 0,
-    correct: 0, wrong: 0, missed: 0,
-    items: [], particles: [], beltOffset: 0, shake: 0,
+    score: 0, lives: 3, level: 1,
+    combo: 0, maxCombo: 0,
+    correct: 0, wrong: 0, missed: 0, nextLevelAt: 8,
+    sortedBy: { recycle: 0, compost: 0, trash: 0, hazard: 0 },
+    items: [], particles: [], floaters: [], beltOffset: 0, shake: 0,
     spawnTimer: 0, selected: null, lastSpawnName: null, frames: 0,
   };
 
@@ -43,8 +48,14 @@
   let lastT = 0;
   let toastTimeout = null;
 
-  const speed = () => Math.min(160, 60 + (S.level - 1) * 14);
-  const spawnInterval = () => Math.max(1.05, 2.4 - (S.level - 1) * 0.18);
+  // ---- difficulty curve: the belt speeds up and spawns get denser per level (both capped) ----
+  const MAX_SPEED = 170;
+  const speed = () => Math.min(MAX_SPEED, 60 + (S.level - 1) * 14);
+  const spawnInterval = () => Math.max(0.95, 2.4 - (S.level - 1) * 0.18);
+
+  // ---- combo: consecutive correct sorts raise the multiplier ----
+  // 3 in a row = x2 · 6 = x3 · 9 = x4 · 12+ = x5 (capped)
+  const comboMult = () => 1 + Math.min(4, Math.floor(S.combo / 3));
 
   // ---- helpers ----
   function roundRect(x, y, w, h, r) {
@@ -85,7 +96,7 @@
     ui.score.textContent = S.score;
     ui.lives.textContent = '♥'.repeat(Math.max(0, S.lives));
     ui.level.textContent = 'Lv ' + S.level;
-    ui.streak.textContent = S.streak >= 3 ? `🔥 ${S.streak} streak` : '';
+    ui.streak.textContent = S.combo > 0 ? `🔥 ${S.combo} combo · ×${comboMult()}` : '';
   }
 
   function getBest() {
@@ -95,12 +106,21 @@
     try { localStorage.setItem(BEST_KEY, String(v)); } catch (e) { /* ignore */ }
   }
 
+  function rankFor(saved) {
+    if (saved >= 40) return '🏆 Zero-Waste Legend';
+    if (saved >= 25) return '🌟 Recycling Hero';
+    if (saved >= 12) return '⭐ Sorting Star';
+    return '🌱 Rookie Sorter — keep practicing!';
+  }
+
   // ---- game flow ----
   function startGame() {
     S.mode = 'play';
-    S.score = 0; S.lives = 3; S.level = 1; S.streak = 0;
-    S.correct = 0; S.wrong = 0; S.missed = 0;
-    S.items = []; S.particles = []; S.shake = 0;
+    S.score = 0; S.lives = 3; S.level = 1;
+    S.combo = 0; S.maxCombo = 0;
+    S.correct = 0; S.wrong = 0; S.missed = 0; S.nextLevelAt = 8;
+    S.sortedBy = { recycle: 0, compost: 0, trash: 0, hazard: 0 };
+    S.items = []; S.particles = []; S.floaters = []; S.shake = 0;
     S.spawnTimer = 0.7; S.selected = null; S.lastSpawnName = null;
     ui.start.classList.add('hidden');
     ui.over.classList.add('hidden');
@@ -113,8 +133,10 @@
   function levelUp() {
     S.level += 1;
     Sfx.levelUp();
-    if (S.level === 2) toast('Level 2 — the HAZARD bin is now open! ⚠️', 'good', 3200);
-    else toast(`Level ${S.level} — items are coming faster!`, 'good', 2600);
+    let msg = `Level ${S.level} — the belt speeds up!`;
+    if (S.level === 2) msg = 'Level 2 — HAZARD bin open + new items! ⚠️';
+    else if (S.level === 4) msg = 'Level 4 — expert trick items incoming! 🧠';
+    toast(msg, 'good', 3000);
     updateHud();
   }
 
@@ -125,11 +147,19 @@
     if (raf) { cancelAnimationFrame(raf); raf = null; }
     const total = S.correct + S.wrong + S.missed;
     const acc = total ? Math.round((S.correct / total) * 100) : 0;
+    const saved = S.sortedBy.recycle + S.sortedBy.compost + S.sortedBy.hazard;
     const best = Math.max(getBest(), S.score);
     setBest(best);
     ui.finalScore.textContent = S.score + ' pts';
-    ui.finalStats.textContent = `Sorted ${S.correct} right · ${S.wrong} wrong · ${S.missed} missed — accuracy ${acc}%`;
-    ui.finalImpact.textContent = `You kept ${S.correct} items out of the landfill! 🍊`;
+    // static template; `saved` is an internal counter (a number), never user input — safe.
+    ui.finalImpact.innerHTML = `🍊 You kept <b>${saved}</b> item${saved === 1 ? '' : 's'} out of the landfill!`;
+    ui.finalBreakdown.textContent =
+      `♻️ ${S.sortedBy.recycle} recycled · 🍃 ${S.sortedBy.compost} composted · ` +
+      `⚠️ ${S.sortedBy.hazard} hazard diverted · 🗑️ ${S.sortedBy.trash} trashed properly`;
+    ui.finalStats.textContent =
+      `Level ${S.level} · longest combo ${S.maxCombo} · accuracy ${acc}% ` +
+      `(${S.correct} right · ${S.wrong} wrong · ${S.missed} missed)`;
+    ui.finalRank.textContent = rankFor(saved);
     ui.bestScore.textContent = best;
     ui.over.classList.remove('hidden');
   }
@@ -170,6 +200,10 @@
     }
   }
 
+  function floater(x, y, text, color) {
+    S.floaters.push({ x, y, text, color, life: 1.15, max: 1.15 });
+  }
+
   function sortItem(item, bin) {
     if (S.mode !== 'play' || !item) return;
     if (!binUnlocked(bin)) {
@@ -178,21 +212,36 @@
     }
     removeItem(item);
     if (bin.id === item.data.bin) {
+      const multBefore = comboMult();
       S.correct += 1;
-      S.streak += 1;
-      S.score += 10 * S.level + S.streak * 2;
+      S.sortedBy[bin.id] += 1;
+      S.combo += 1;
+      S.maxCombo = Math.max(S.maxCombo, S.combo);
+      const mult = comboMult();
+      const gained = (item.data.pts + (S.level - 1) * 2) * mult;
+      S.score += gained;
       Sfx.correct();
       burst(item.x + item.size / 2, item.y + item.size / 2, '#3fb950');
+      floater(item.x + item.size / 2, item.y + 4, `+${gained}${mult > 1 ? ` ×${mult}` : ''}`, '#3fb950');
+      if (mult > multBefore) {
+        Sfx.combo(mult);
+        floater(item.x + item.size / 2, item.y - 26, `🔥 COMBO ×${mult}`, '#ffb347');
+      }
       toast(`✓ ${item.data.icon} ${item.data.name} → ${bin.label}: ${item.data.fact}`, 'good', 3400);
-      if (S.correct % 8 === 0) levelUp();
+      if (S.correct >= S.nextLevelAt) {
+        S.nextLevelAt += 8;
+        levelUp();
+      }
     } else {
+      const comboLost = S.combo >= 3;
       S.wrong += 1;
-      S.streak = 0;
+      S.combo = 0;
       S.lives -= 1;
       S.shake = REDUCED_MOTION ? 0 : 7;
       Sfx.wrong();
       const correctBin = BINS.find((b) => b.id === item.data.bin);
-      toast(`✗ ${item.data.icon} ${item.data.name} → ${correctBin.label}: ${item.data.fact}`, 'bad', 3800);
+      if (comboLost) floater(item.x + item.size / 2, item.y + 4, '✗ combo lost', '#f85149');
+      toast(`✗ ${item.data.icon} ${item.data.name} → ${correctBin.label}: ${item.data.fact}${comboLost ? ' Combo lost!' : ''}`, 'bad', 3800);
       updateHud();
       checkGameOver();
     }
@@ -215,7 +264,7 @@
       it.x -= speed() * dt;
       if (it.x + it.size < 0) {
         S.missed += 1;
-        S.streak = 0;
+        S.combo = 0;
         removeItem(it);
         Sfx.wrong();
         toast(`Missed ${it.data.icon} ${it.data.name}! It rolled off the belt.`, 'bad', 2400);
@@ -231,6 +280,13 @@
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.vy += 420 * dt;
+    }
+
+    for (let i = S.floaters.length - 1; i >= 0; i--) {
+      const f = S.floaters[i];
+      f.life -= dt;
+      if (f.life <= 0) { S.floaters.splice(i, 1); continue; }
+      if (!REDUCED_MOTION) f.y -= 36 * dt;
     }
   }
 
@@ -355,6 +411,15 @@
       ctx.beginPath();
       ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    for (const f of S.floaters) {
+      ctx.globalAlpha = Math.max(0, f.life / f.max);
+      ctx.fillStyle = f.color;
+      ctx.font = FLOAT_FONT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(f.text, f.x, f.y);
     }
     ctx.globalAlpha = 1;
   }

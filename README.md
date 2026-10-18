@@ -21,7 +21,9 @@ No build step, no dependencies.
 - ⌨️ Keyboard: `Space`/`Enter` selects the leftmost item, `1-4` sorts it, `Esc` deselects
 - ❤️ You have **3 lives** — a wrong bin or a missed item costs one
 - ⚠️ The **HAZARD** bin (batteries, e-waste) unlocks at **Level 2**
-- 🔥 Sort several in a row for a streak bonus
+- 🔥 **Combo**: chain correct sorts — ×2 at 3 in a row, up to ×5 at 12
+- 📈 **Levels**: every 8 correct sorts the belt speeds up and new item tiers join (36 items, 4 categories)
+- 🏁 **Result screen**: see how many items you kept out of the landfill, your longest combo, and your rank
 
 ## Why it matters (social good)
 

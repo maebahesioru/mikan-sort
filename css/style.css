@@ -90,9 +90,15 @@ canvas {
 .card .purpose { color: var(--muted); font-size: 14px; line-height: 1.65; margin-bottom: 16px; }
 .card .purpose b { color: var(--fg); }
 .card .how { text-align: left; margin: 0 auto 18px; max-width: 420px; color: var(--muted); font-size: 14px; line-height: 2; list-style: none; }
+.card .how li { padding-left: 1.6em; text-indent: -1.6em; }
 .card .big { font-size: 34px; font-weight: 800; color: var(--accent); margin-bottom: 6px; }
+.card .impact { font-size: 16px; color: var(--fg); margin-bottom: 8px; line-height: 1.5; }
+.card .impact b { color: var(--accent); font-size: 21px; }
+.card .breakdown { color: var(--muted); font-size: 13px; line-height: 1.7; margin-bottom: 10px; }
+.card .stats-line { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+.card .rank { font-weight: 700; color: var(--accent); font-size: 16px; margin-bottom: 2px; }
+.card .footnote { color: var(--muted); font-size: 11px; opacity: 0.85; margin-top: 10px; }
 .card .best { color: var(--muted); font-size: 13px; margin: 12px 0; }
-.card #final-stats { font-size: 15px; color: var(--fg); margin-bottom: 10px; }
 
 kbd {
   background: var(--bg);

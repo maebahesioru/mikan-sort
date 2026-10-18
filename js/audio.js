@@ -34,6 +34,7 @@ const Sfx = (() => {
   return {
     correct() { tone(660, 0.09); tone(880, 0.12, 'sine', 0.08); },
     wrong() { tone(180, 0.22, 'square', 0, 0.06); },
+    combo(mult) { tone(440 + mult * 110, 0.08, 'triangle', 0, 0.07); tone(660 + mult * 110, 0.11, 'triangle', 0.07); },
     levelUp() { tone(523, 0.09); tone(659, 0.09, 'sine', 0.09); tone(784, 0.14, 'sine', 0.18); },
     gameOver() { tone(392, 0.16); tone(311, 0.16, 'sine', 0.16); tone(233, 0.3, 'sine', 0.32); },
     toggle() { enabled = !enabled; if (enabled) tone(700, 0.08); return enabled; },

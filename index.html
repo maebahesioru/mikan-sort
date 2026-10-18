@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mikan Sort! — A Recycling Game for a Cleaner World</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍊</text></svg>">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -33,6 +34,8 @@
       <ul class="how">
         <li>👆 Click / tap an item on the belt to pick it up</li>
         <li>🗑️ Click a bin — or press <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> — to sort it</li>
+        <li>🔥 Sort in a row to build a combo — up to ×5 points</li>
+        <li>📈 Every 8 correct sorts levels up: faster belt, trickier items</li>
         <li>❤️ Wrong bin or missed item costs a life. 3 lives.</li>
         <li>⚠️ The HAZARD bin unlocks at Level 2!</li>
       </ul>
@@ -42,11 +45,14 @@
 
   <div id="overlay-over" class="overlay hidden">
     <div class="card">
-      <h1>Time's up!</h1>
+      <h1>Out of lives!</h1>
       <p class="big" id="final-score">0 pts</p>
-      <p id="final-stats"></p>
-      <p class="purpose" id="final-impact"></p>
+      <p class="impact" id="final-impact"></p>
+      <p class="breakdown" id="final-breakdown"></p>
+      <p class="stats-line" id="final-stats"></p>
+      <p class="rank" id="final-rank"></p>
       <p class="best">Best: <b id="best-score">0</b> pts</p>
+      <p class="footnote">Facts are simplified and generic — rules vary by city. Check your local guidelines. 🌍</p>
       <button id="restart-btn" class="primary" type="button">Play again</button>
     </div>
   </div>
